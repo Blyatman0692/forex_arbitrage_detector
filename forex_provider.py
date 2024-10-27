@@ -12,10 +12,10 @@ import random
 import fxp_bytes
 
 
-REQUEST_ADDRESS = ('localhost', 50403)
+REQUEST_ADDRESS = ('localhost', 10101)
 REQUEST_SIZE = 12
 REVERSE_QUOTED = {'GBP', 'EUR', 'AUD'}
-SUBSCRIPTION_TIME = 19  # 10 * 60  # seconds
+SUBSCRIPTION_TIME = 10  # 10 * 60  # seconds
 
 
 class TestPublisher(object):
@@ -141,7 +141,7 @@ class ForexProvider(object):
         """
         listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         listener.bind(address)
-        listener.settimeout(0.2)  # FIXME
+        listener.settimeout(1)  # FIXME
         return listener
 
 
