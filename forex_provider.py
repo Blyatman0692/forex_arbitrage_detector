@@ -100,7 +100,7 @@ class TestPublisher(object):
             self.socket.sendto(message, subscriber)
 
         # pick a time to wait until the next message
-        return 1.0  # FIXME randomize quiet time
+        return 3.0  # FIXME randomize quiet time
 
 
 class ForexProvider(object):
