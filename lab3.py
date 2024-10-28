@@ -3,6 +3,7 @@ import bellman_ford
 import fxp_bytes_subscriber
 import socket
 import threading
+import math
 
 REQUEST_ADDRESS = ('localhost', 10101)
 
@@ -10,50 +11,58 @@ class QuotesManager:
     def __init__(self):
         self.latest_valid_quotes = {}
         self.lock = threading.Lock()
+        self.forexGraph = bellman_ford.BellmanFord()
+
+    def update_graph(self, currency1, currency2, price):
+        weight_1_2 = -math.log(price)
+        weight_2_1 = math.log(price)
+
+        self.forexGraph.add_edge(currency1, currency2, weight_1_2)
+        self.forexGraph.add_edge(currency2, currency1, weight_2_1)
+
+    def remove_expired_quotes(self):
+        curr_time = datetime.utcnow()
+        # todo: fix expiry time limit
+        expiry_limit = curr_time - timedelta(seconds=3)
+
+        expiry_keys = []
+
+        for quote_key, quote_info in self.latest_valid_quotes.items():
+            if quote_info['time'] < expiry_limit:
+                expiry_keys.append(quote_key)
+        with self.lock:
+            for key in expiry_keys:
+                print(f"Removing expired quote for {key}")
+                del self.latest_valid_quotes[key]
+                currency1, currency2 = key.split('/')
+                self.forexGraph.remove_edge(currency1, currency2)
+                self.forexGraph.remove_edge(currency2, currency1)
 
     def process_quotes(self, quotes):
         for quote in quotes:
             currency_pair = quote['cross']
+            currency1, currency2 = currency_pair.split('/')
             with self.lock:
-                if currency_pair not in self.latest_valid_quotes:
+                if (currency_pair not in self.latest_valid_quotes
+                ) or (quote['time'] > self.latest_valid_quotes[currency_pair]['time']):
                     self.latest_valid_quotes[currency_pair] = {
                         'price': quote['price'],
                         'time': quote['time']
                     }
-                    print(
-                        f"New quote detected, adding:{currency_pair}: "
-                        f"{self.latest_valid_quotes[currency_pair]}")
-
-                if quote['time'] > self.latest_valid_quotes[currency_pair]['time']:
-                    self.latest_valid_quotes[currency_pair] = {
-                        'price': quote['price'],
-                        'time': quote['time']
-                    }
-                    print(
-                        f"Existing quote detected, replacing with new quote:{currency_pair}: "
-                        f"{self.latest_valid_quotes[currency_pair]}")
+                    print(f"{quote['time']} {currency1} {currency2} {quote['price']:.2f}")
+                        # f"Updating for: {currency_pair}: "
+                        # f"{self.latest_valid_quotes[currency_pair]}"
+                self.update_graph(currency1, currency2, quote['price'])
 
             self.remove_expired_quotes()
+            dist, prev, neg_edge = self.forexGraph.shortest_paths(currency1)
+            if neg_edge is not None:
+                print(f"Arbitrage detected: {neg_edge}, {prev}, {dist}")
 
-    def remove_expired_quotes(self):
-        #with self.lock:
-            curr_time = datetime.utcnow()
-            # todo: fix expiry time limit
-            expiry_limit = curr_time - timedelta(seconds=3)
 
-            expiry_keys = []
 
-            for quote_key, quote_info in self.latest_valid_quotes.items():
-                if quote_info['time'] < expiry_limit:
-                    expiry_keys.append(quote_key)
-            with self.lock:
-                for key in expiry_keys:
-                    print(f"Removing expired quote for {key}")
-                    del self.latest_valid_quotes[key]
 
-    def get_valid_quotes(self):
-        with self.lock:
-            return self.latest_valid_quotes.copy()
+
 
 class UDPSubscriber:
     def __init__(self, server_addr, listen_ip, listen_port, quotes_manager):
