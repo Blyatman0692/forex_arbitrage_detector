@@ -50,18 +50,58 @@ class QuotesManager:
                         'time': quote['time']
                     }
                     print(f"{quote['time']} {currency1} {currency2} {quote['price']:.2f}")
-                        # f"Updating for: {currency_pair}: "
-                        # f"{self.latest_valid_quotes[currency_pair]}"
                 self.update_graph(currency1, currency2, quote['price'])
 
             self.remove_expired_quotes()
-            dist, prev, neg_edge = self.forexGraph.shortest_paths(currency1)
+
+            dist, prev, neg_edge = self.forexGraph.shortest_paths('USD')
             if neg_edge is not None:
                 print(f"Arbitrage detected: {neg_edge}, {prev}, {dist}")
+                self.construct_cycle(neg_edge, prev)
+                return
 
+    def construct_cycle(self, neg_edge, prev):
+        cycle = []
+        curr = neg_edge[0]
+        while curr is not None:
+            cycle.append(curr)
+            curr = prev[curr]
 
+        cycle.reverse()
 
+        exchange_rates = []
+        for i in range(len(cycle) - 1):
+            from_ = cycle[i]
+            to_ = cycle[i + 1]
+            weight = self.forexGraph.edges[from_][to_]
+            rate = math.exp(-weight)
+            exchange_rates.append(rate)
 
+        self.print_cycle(cycle, exchange_rates)
+
+    def print_cycle(self, cycle, exchange_rates):
+        init = 100
+        curr = init
+
+        print(f"\tstart with {cycle[0]} {init}")
+
+        for i in range(len(exchange_rates)):
+            from_ = cycle[i]
+            to_ = cycle[i + 1]
+            rate = exchange_rates[i]
+            curr *= rate
+            print(f"\texchange {from_} for {to_} at {rate:.10f} --> {to_} {curr:.10f}")
+
+        self.end_with(cycle, curr)
+
+    def end_with(self, cycle, curr):
+        from_ = cycle[len(cycle) - 1]
+        to_ = cycle[0]
+        weight = self.forexGraph.edges[from_][to_]
+        rate = math.exp(-weight)
+        final = curr * rate
+        print(f"\texchange {from_} for {to_} at {rate:.10f} --> {to_} {final:.10f}")
+        print(f"\tend with {cycle[0]} {final:.10f}\n")
 
 
 class UDPSubscriber:

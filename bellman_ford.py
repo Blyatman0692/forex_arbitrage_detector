@@ -47,7 +47,7 @@ class BellmanFord(object):
         except KeyError:
             raise KeyError('remove_edge({}, {})'.format(from_vertex, to_vertex))
 
-    def shortest_paths(self, start_vertex, tolerance=0):
+    def shortest_paths(self, start_vertex, tolerance=0.01):
         """
         Find the shortest paths (sum of edge weights) from start_vertex to
         every other vertex. Also detect if there are negative cycles and
