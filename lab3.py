@@ -90,6 +90,7 @@ class QuotesManager:
         """
         Processes incoming quotes, updates valid quotes and the graph, removes
         expired quotes, and checks for arbitrage opportunities.
+        -- after each message update, will try to locate possible arbitrage --
 
         :param:
             quotes (list): List of quotes where each quote contains `cross`, `price`, and `time`
@@ -124,7 +125,7 @@ class QuotesManager:
             # start arbitrage detection on valid quotes, always starting with 'USD'
             dist, prev, neg_edge = self.forexGraph.shortest_paths('USD')
             if neg_edge is not None:
-                print(f"Arbitrage detected: {neg_edge}, {prev}, {dist}")
+                print(f"\nArbitrage detected: {neg_edge}, {prev}, {dist}")
                 self.construct_cycle(neg_edge, prev)
                 # only 1 loop needed, return after found
                 return
