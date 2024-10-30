@@ -1,5 +1,10 @@
 """
-My file
+forex_bytes_subscriber.py
+Junwen Zheng
+Version: Oct 30, 2024 -- added comments for submission
+
+This module provides functionality for encoding and decoding forex subscription requests
+and forex quote messages for UDP communication.
 """
 import socket
 import struct
@@ -9,7 +14,20 @@ import fxp_bytes
 
 def marshal_sub_request(ip, port):
     """
-    todo: comment
+    Marshals the subscription request by encoding the IP address and port into a binary format.
+
+    This function converts the provided IP address and port into a 6-byte binary message
+    format, suitable for sending as a subscription request over UDP.
+
+    :param:
+        ip (str): The IP address to encode in the subscription request.
+        port (int): The port number to encode in the subscription request.
+
+    :return:
+        bytes: A 6-byte binary message combining the IP and port.
+
+    :raises:
+        ValueError: If the IP address is invalid or the port number is outside the 0-65535 range.
     """
     try:
         # Convert IP address to a 4-byte representation
@@ -30,7 +48,21 @@ def marshal_sub_request(ip, port):
 
 def unmarshal_quotes(msg):
     """
-    todo: comment
+    Unmarshal a message containing multiple forex quotes into a list of readable quotes.
+
+    This function processes a binary message containing one or more 32-byte forex quotes.
+    Each quote includes currency pairs, price, and a timestamp, which are extracted and
+    decoded into a readable dictionary format.
+
+    :param:
+        msg (bytes): A binary message containing one or more 32-byte forex quotes.
+
+    :return:
+        list: A list of dictionaries, each representing a forex quote with 'cross' (currency pair),
+              'price' (float), and 'time' (datetime object) fields.
+
+    :raises:
+        ValueError: If the message length is not a multiple of 32 bytes.
     """
     if len(msg) % 32 != 0:
         raise ValueError("Incorrect message format!")
@@ -64,11 +96,12 @@ def unmarshal_quotes(msg):
     return quotes
 
 
-# if __name__ == '__main__':
-#     quotes = [{'cross': 'GBP/USD', 'price': 9.9900000000, 'time': datetime.datetime(2006,1,2)},
-#              {'cross': 'USD/JPY', 'price': 108.2755, 'time': datetime.datetime.utcnow()}]
-#     serialized_msg = fxp_bytes.marshal_message(quotes)
-#
-#     msg = b'AUDUSD\t\xfe??\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00EURUSD\xe4\xda\x8c?\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00USDCHFG\x03\x80?\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00GBPUSD\x88\xf4\x9f?\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00AUDCAD\x15\xaa\x18B\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00CADJPY\x15\xaa\x18C\x00\x06%n\x03\xbc\xf9Q\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-#
-#     print(unmarshal_quotes(msg))
+if __name__ == '__main__':
+    """
+    test main to see if methods are working properly
+    """
+    quotes = [{'cross': 'GBP/USD', 'price': 9.9900000000, 'time': datetime.datetime(2006,1,2)},
+             {'cross': 'USD/JPY', 'price': 108.2755, 'time': datetime.datetime.utcnow()}]
+    serialized_msg = fxp_bytes.marshal_message(quotes)
+    print(unmarshal_quotes(serialized_msg))
+    print(marshal_sub_request('127.0.0.1', 10101))
