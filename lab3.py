@@ -125,7 +125,7 @@ class QuotesManager:
             # start arbitrage detection on valid quotes, always starting with 'USD'
             dist, prev, neg_edge = self.forexGraph.shortest_paths('USD')
             if neg_edge is not None:
-                print(f"\nArbitrage detected: {neg_edge}, {prev}, {dist}")
+                print(f"Arbitrage detected involving edges: {neg_edge}")
                 self.construct_cycle(neg_edge, prev)
                 # only 1 loop needed, return after found
                 return
@@ -283,19 +283,19 @@ class UDPSubscriber:
 
 
 def main():
-    server_ip = input("Enter server IP (for localhost enter 127.0.0.1): ")
-    server_port = int(input("Enter server port: "))
-    listen_ip = input("Enter listen IP (for localhost enter 127.0.0.1): ")
-    listen_port = int(input("Enter listen port: "))
-    server_addr = (server_ip, server_port)
+    # server_ip = input("Enter server IP (for localhost enter 127.0.0.1): ")
+    # server_port = int(input("Enter server port: "))
+    # listen_ip = input("Enter listen IP (for localhost enter 127.0.0.1): ")
+    # listen_port = int(input("Enter listen port: "))
+    # server_addr = (server_ip, server_port)
 
     quotes_manager = QuotesManager()
 
-    subscriber = UDPSubscriber(server_addr, listen_ip, listen_port, quotes_manager)
+    # subscriber = UDPSubscriber(server_addr, listen_ip, listen_port, quotes_manager)
 
     # hard coded main for testing purposes
-    # REQUEST_ADDRESS = ('localhost', 10101)
-    # subscriber = UDPSubscriber(REQUEST_ADDRESS, '127.0.0.1', 50505, quotes_manager)
+    REQUEST_ADDRESS = ('localhost', 10101)
+    subscriber = UDPSubscriber(REQUEST_ADDRESS, '127.0.0.1', 50505, quotes_manager)
 
     subscriber.run()
 
