@@ -2,7 +2,8 @@
 UDP subscriber for the Forex Provider quote feed.
 
 This module handles socket subscription, message receiving, and quote
-unmarshalling before handing decoded quotes to a QuotesManager.
+unmarshalling before handing decoded quotes to a QuotesManager. It can forward
+structured events to an optional event handler.
 """
 import socket
 import threading
@@ -25,7 +26,13 @@ class UDPSubscriber:
         quotes_manager (QuotesManager): class instance for managing quotes.
     """
 
-    def __init__(self, server_addr, listen_ip, listen_port, quotes_manager):
+    def __init__(
+            self,
+            server_addr,
+            listen_ip,
+            listen_port,
+            quotes_manager,
+            event_handler=None):
         """
         Initializes UDPSubscriber with server and local configuration.
 
@@ -34,6 +41,7 @@ class UDPSubscriber:
             listen_ip (str): IP address for listening.
             listen_port (int): Port for listening.
             quotes_manager (QuotesManager): Instance to manage quotes.
+            event_handler (callable): Optional callback for structured events.
         """
         self.server_addr = server_addr
         self.listen_ip = listen_ip
@@ -43,6 +51,15 @@ class UDPSubscriber:
         self.socket.bind(self.addr)
         self.running = False
         self.quotes_manager = quotes_manager
+        self.event_handler = event_handler
+
+    def emit_event(self, event):
+        if self.event_handler is not None:
+            self.event_handler(event)
+
+    def emit_events(self, events):
+        for event in events:
+            self.emit_event(event)
 
     def connect(self):
         """
@@ -50,6 +67,11 @@ class UDPSubscriber:
         """
         self.socket.sendto(fxp_bytes_subscriber.marshal_sub_request
                            (self.listen_ip, self.listen_port), self.server_addr)
+        self.emit_event({
+            'type': 'subscription_requested',
+            'server_addr': self.server_addr,
+            'listen_addr': self.addr,
+        })
 
     def listen(self):
         """
@@ -67,19 +89,30 @@ class UDPSubscriber:
                         incoming_bytes)
 
                     # feed quotes to QuoteManager
-                    self.quotes_manager.process_quotes(unprocessed_quotes)
+                    events = self.quotes_manager.process_quotes(unprocessed_quotes)
+                    self.emit_events(events)
                     # reset the timeout after receiving data
                     self.socket.settimeout(timeout)
             except socket.timeout:
-                print(
-                    f"No incoming messages for {timeout} seconds. Shutting down...")
-                self.stop_running()
+                self.stop_running(
+                    reason='timeout',
+                    message=f"No incoming messages for {timeout} seconds. Shutting down...",
+                    timeout=timeout,
+                )
             except socket.error as e:
-                print(f"Socket error: {e}")
-                self.stop_running()
+                self.emit_event({
+                    'type': 'subscriber_error',
+                    'message': f"Socket error: {e}",
+                    'error': str(e),
+                })
+                self.stop_running(reason='socket_error')
             except Exception as e:
-                print(f"Error: {e}")
-                self.stop_running()
+                self.emit_event({
+                    'type': 'subscriber_error',
+                    'message': f"Error: {e}",
+                    'error': str(e),
+                })
+                self.stop_running(reason='error')
 
     def start_listener_thread(self):
         """
@@ -93,8 +126,26 @@ class UDPSubscriber:
         self.running = True
         self.connect()
         self.start_listener_thread()
+        self.emit_event({
+            'type': 'subscriber_started',
+            'server_addr': self.server_addr,
+            'listen_addr': self.addr,
+        })
 
-    def stop_running(self):
+    def stop_running(self, reason='stopped', message=None, timeout=None):
+        was_running = self.running
         self.running = False
-        self.socket.close()
-        print("Subscriber stopped. Socket closed.")
+        try:
+            self.socket.close()
+        except OSError:
+            pass
+
+        if was_running:
+            self.emit_event({
+                'type': 'subscriber_stopped',
+                'reason': reason,
+                'message': message,
+                'timeout': timeout,
+                'server_addr': self.server_addr,
+                'listen_addr': self.addr,
+            })
