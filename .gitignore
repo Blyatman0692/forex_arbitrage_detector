@@ -1,0 +1,100 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+.python-version
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+
+# Python packaging and build output
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test, coverage, and quality-tool caches
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+dmypy.json
+dmypy.jsonl
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Local runtime output
+*.log
+logs/
+tmp/
+temp/
+
+# IDE and editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS and Windows metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Tool-specific local files
+.cache/
+.parcel-cache/
+.turbo/
+
+# Dependency manager files that are local-only
+pip-wheel-metadata/
+
+# Generated archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
